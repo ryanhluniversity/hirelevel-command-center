@@ -1,1 +1,395 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HireLevel Command Center</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;padding-bottom:60px}
+.header{background:#fff;border-bottom:1px solid #e8e8e4;padding:16px 20px 0;position:sticky;top:0;z-index:10}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.logo{font-size:16px;font-weight:600;color:#1a1a1a}.logo span{color:#1D9E75}
+.date-badge{font-size:11px;color:#888;background:#f5f5f0;padding:4px 10px;border-radius:20px;border:1px solid #e8e8e4}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:14px}
+.nav-btn{padding:9px 4px;font-size:12px;font-weight:500;border:1px solid #e8e8e4;border-radius:8px;background:#fff;color:#888;cursor:pointer;transition:all 0.15s;text-align:center}
+.nav-btn.active{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.content{padding:20px;display:none}
+.content.active{display:block}
+.section-title{font-size:20px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.section-sub{font-size:13px;color:#888;margin-bottom:20px;line-height:1.5}
+.card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:16px 20px;margin-bottom:12px}
+.card-label{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.card-body{font-size:14px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap}
+.primary-btn{width:100%;padding:15px;font-size:15px;font-weight:600;background:#1D9E75;color:#fff;border:none;border-radius:12px;cursor:pointer;margin-bottom:16px;transition:opacity 0.15s}
+.primary-btn:hover{opacity:0.9}
+.primary-btn:disabled{opacity:0.5;cursor:not-allowed}
+.toggle-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+.toggle-opt{padding:11px 8px;font-size:13px;font-weight:500;border:1px solid #e8e8e4;border-radius:8px;background:#fff;color:#888;cursor:pointer;text-align:center;transition:all 0.15s}
+.toggle-opt.sel{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+textarea{width:100%;padding:12px 14px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#fff;border:1px solid #e8e8e4;border-radius:12px;resize:none;margin-bottom:12px;line-height:1.5}
+textarea:focus{outline:none;border-color:#1D9E75}
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0eb}
+.task-item:last-child{border-bottom:none}
+.task-check{width:20px;height:20px;min-width:20px;border-radius:50%;border:1.5px solid #ddd;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;background:#fff;transition:all 0.15s}
+.task-check.done{background:#1D9E75;border-color:#1D9E75}
+.task-check.done::after{content:'';display:block;width:5px;height:9px;border:2px solid #fff;border-left:none;border-top:none;transform:rotate(45deg);margin-top:-2px}
+.task-text{font-size:14px;color:#1a1a1a;line-height:1.5;flex:1}
+.task-text.done{text-decoration:line-through;color:#aaa}
+.task-owner{font-size:11px;color:#aaa;margin-top:3px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.badge-Ryan{background:#E6F1FB;color:#0C447C}
+.badge-Brandon{background:#EEEDFE;color:#3C3489}
+.badge-VA{background:#FAEEDA;color:#633806}
+.copy-btn{font-size:12px;color:#1D9E75;background:none;border:none;cursor:pointer;padding:8px 0 0;font-weight:600}
+.scripture-card{background:#E1F5EE;border:1px solid #5DCAA5;border-radius:12px;padding:20px;margin-bottom:12px}
+.scripture-ref{font-size:11px;font-weight:600;color:#085041;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em}
+.scripture-text{font-size:15px;color:#085041;line-height:1.7;font-style:italic;margin-bottom:10px}
+.scripture-interp{font-size:13px;color:#0F6E56;line-height:1.6}
+.loader{display:flex;gap:5px;align-items:center;padding:8px 0}
+.loader span{width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:bounce 1.2s infinite}
+.loader span:nth-child(2){animation-delay:0.2s}
+.loader span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.error-card{background:#fff0f0;border:1px solid #ffcdd2;border-radius:12px;padding:16px;margin-bottom:12px;font-size:14px;color:#c62828;line-height:1.6}
+.api-setup{background:#fff;border:2px solid #1D9E75;border-radius:12px;padding:20px;margin-bottom:16px}
+.api-setup h3{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:8px}
+.api-setup p{font-size:13px;color:#666;line-height:1.6;margin-bottom:12px}
+.api-input{width:100%;padding:12px 14px;font-size:13px;font-family:monospace;color:#1a1a1a;background:#f5f5f0;border:1px solid #e8e8e4;border-radius:8px;margin-bottom:10px}
+.api-input:focus{outline:none;border-color:#1D9E75}
+.save-btn{width:100%;padding:12px;font-size:14px;font-weight:600;background:#1D9E75;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.saved-badge{display:inline-block;background:#E1F5EE;color:#085041;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-left:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">HireLevel <span>Command Center</span></div>
+    <div class="date-badge" id="date-badge"></div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('morning')">Morning Report</button>
+    <button class="nav-btn" onclick="showTab('tasks')">Task Hub</button>
+    <button class="nav-btn" onclick="showTab('content')">Content Studio</button>
+  </div>
+</div>
+
+<div class="content active" id="tab-morning">
+  <div class="section-title">Good morning, Ryan.</div>
+  <div class="section-sub">Your daily brief — scripture, content ideas, competitor intel, and funnel insights.</div>
+  <div id="api-setup-morning"></div>
+  <button class="primary-btn" id="report-btn" onclick="generateReport()">Generate today's report</button>
+  <div id="morning-output"></div>
+</div>
+
+<div class="content" id="tab-tasks">
+  <div class="section-title">Task hub</div>
+  <div class="section-sub">Describe a task. Claude breaks it down and assigns owners using Buy Back Your Time logic.</div>
+  <div id="api-setup-tasks"></div>
+  <textarea id="task-input" rows="3" placeholder="e.g. 'Build the Track 2 landing page' or 'Create a follow-up email sequence for webinar no-shows'"></textarea>
+  <button class="primary-btn" id="task-btn" onclick="delegateTask()">Break this down</button>
+  <div id="tasks-list"></div>
+</div>
+
+<div class="content" id="tab-content">
+  <div class="section-title">Content studio</div>
+  <div class="section-sub">Pick your platform and avatar. Get a post in your exact voice — ready to copy and paste.</div>
+  <div id="api-setup-content"></div>
+  <div class="card-label">Platform</div>
+  <div class="toggle-row">
+    <div class="toggle-opt sel" id="plt-linkedin" onclick="selectToggle('platform','linkedin',this)">LinkedIn</div>
+    <div class="toggle-opt" id="plt-tiktok" onclick="selectToggle('platform','tiktok',this)">TikTok</div>
+  </div>
+  <div class="card-label">Avatar</div>
+  <div class="toggle-row">
+    <div class="toggle-opt sel" id="avt-track1" onclick="selectToggle('avatar','track1',this)">Track 1 — career changer</div>
+    <div class="toggle-opt" id="avt-track2" onclick="selectToggle('avatar','track2',this)">Track 2 — stuck achiever</div>
+  </div>
+  <div class="card-label">Topic or angle (optional)</div>
+  <textarea id="content-topic" rows="2" placeholder="e.g. 'Why your resume isn't the problem' — or leave blank for a fresh idea"></textarea>
+  <button class="primary-btn" id="content-btn" onclick="generateContent()">Generate post</button>
+  <div id="content-output"></div>
+</div>
+
+<script>
+const RYAN_CONTEXT = `You are the AI brain inside Ryan's HireLevel University Command Center. Here is everything about Ryan:
+
+Ryan is the founder of HireLevel University, a medical sales career coaching company built around his Interview-to-Offer system and Core-4 Story Method. He also works as a pharmaceutical sales rep at AbbVie promoting Elahere in oncology.
+
+BUSINESS: HireLevel University has two tracks.
+Track 1 helps ambitious career changers break into medical sales. Flagship offer is $5,000 including course access, resume rewrite, and 1:1 coaching with Ryan. Free webinar funnel at movetomedsales.com.
+Track 2 serves experienced reps (5-12 years in medical sales, Presidents Club level) who are stuck and quietly losing confidence — the Stuck Achiever. Premium price point. Max 5 per cohort mastermind. Funnel, landing page, and offer still being built.
+
+RYAN'S VOICE: Conversational. Peer level. Authentic. Story driven. Short punchy sentences. No em dashes. No AI-sounding patterns. Every post feels like sitting across a coffee shop table. Stops the scroll by making the reader feel seen not because it is flashy. Soft CTAs always. Never mention volume helped.
+
+CONTENT PLATFORMS:
+LinkedIn rewards narrative, vulnerability, professional insight, story. Strong opening line earns the scroll. Written posts 150-250 words. Videos feel genuine and direct to camera.
+TikTok rewards pattern interrupts, fast hooks, entertainment, value in first 3 seconds. Structure: hook, conflict, resolution, CTA. Energy matters more than polish. Scripts 100-150 words.
+
+MENTORS TO DRAW FROM: Alex Hormozi, Russell Brunson, Amy Porterfield, Myron Golden, Tony Robbins, Dean Graziosi, Gary Vaynerchuk, Ed Mylett, Dan Martell.
+
+FAITH: Ryan is a deeply committed Catholic. He believes God and Jesus have been by his side his whole life. Abundance theology — God wants his people to live in abundance. Abundance is evidence of faithfulness. Ryan is a vehicle for God. All recommendations filter through faith, integrity, and abundance.
+
+COMPETITORS TO MONITOR: Evolve Your Success, New to Med Device, Medical Sales U, Jebb Ruff, Kat Hurd, Rep Path.
+
+PERSONAL: Married to Nicole (CS on DiSC, complete opposite of Ryan, recently started The Health Confidant). Two kids: Ainsley and Joey. Daily BJJ practitioner and serious strength trainer. iD on DiSC — visionary, enthusiastic, moves fast. Applying Dan Martell Buy Back Your Time — Ryan only does what only Ryan can do: vision, coaching, content, relationships. Everything else goes to Brandon (business partner, operations, tech, systems) or a VA (research, admin, scheduling, repetitive tasks).
+
+NON-NEGOTIABLES: Faith and family are equal highest priorities and both rank above business. Any recommendation that compromises faith or family is wrong regardless of financial upside.`;
+
+const state = { platform: 'linkedin', avatar: 'track1', tasks: [], apiKey: '' };
+
+function init() {
+  const d = new Date();
+  document.getElementById('date-badge').textContent = d.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric'});
+  const saved = localStorage.getItem('hl_api_key');
+  if (saved) state.apiKey = saved;
+  checkApiSetup();
+}
+
+function checkApiSetup() {
+  const ids = ['api-setup-morning','api-setup-tasks','api-setup-content'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!state.apiKey) {
+      el.innerHTML = `
+        <div class="api-setup">
+          <h3>One-time setup — add your API key</h3>
+          <p>To power the AI, you need a free Anthropic API key. Go to <strong>console.anthropic.com</strong>, sign up with your Gmail, and copy your API key. Paste it below. This is saved on your device only.</p>
+          <input class="api-input" type="password" id="key-input-${id}" placeholder="sk-ant-..." />
+          <button class="save-btn" onclick="saveKey('${id}')">Save and activate</button>
+        </div>`;
+    } else {
+      el.innerHTML = `<p style="font-size:12px;color:#1D9E75;margin-bottom:12px;font-weight:600;">AI connected <span class="saved-badge">Active</span></p>`;
+    }
+  });
+}
+
+function saveKey(inputId) {
+  const val = document.getElementById('key-input-'+inputId).value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    alert('That does not look like a valid Anthropic API key. It should start with sk-ant-');
+    return;
+  }
+  state.apiKey = val;
+  localStorage.setItem('hl_api_key', val);
+  checkApiSetup();
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const idx = ['morning','tasks','content'].indexOf(tab);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+}
+
+function selectToggle(group, val, el) {
+  state[group] = val;
+  const prefix = group === 'platform' ? 'plt-' : 'avt-';
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function loader() {
+  return `<div class="loader"><span></span><span></span><span></span></div>`;
+}
+
+async function callClaude(prompt) {
+  if (!state.apiKey) {
+    return JSON.stringify({error: 'No API key. Please add your Anthropic API key in the setup box above.'});
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system: RYAN_CONTEXT,
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  const data = await res.json();
+  if (data.error) return JSON.stringify({error: data.error.message});
+  return data.content?.[0]?.text || '{}';
+}
+
+async function generateReport() {
+  if (!state.apiKey) { alert('Please add your API key first using the setup box above.'); return; }
+  const btn = document.getElementById('report-btn');
+  const out = document.getElementById('morning-output');
+  btn.disabled = true;
+  btn.textContent = 'Generating your brief...';
+  out.innerHTML = `<div class="card"><div class="card-label">Loading</div>${loader()}</div>`;
+
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const prompt = `Generate Ryan's full morning report for ${today}. Return ONLY raw JSON with no markdown, no backticks, no explanation. Use this exact structure:
+{
+  "scripture": {"reference": "Book Chapter:Verse", "text": "The scripture verse text", "interpretation": "2-3 sentences interpreting through Myron Golden prosperity theology tied to what Ryan is building right now"},
+  "content_video": {"avatar": "Track 1 or Track 2", "concept": "The video concept in 1-2 sentences", "hook_linkedin": "LinkedIn hook", "hook_tiktok": "TikTok hook", "structure": "Brief structure note"},
+  "content_written": {"avatar": "Track 1 or Track 2", "concept": "The written post concept in 1-2 sentences", "hook_linkedin": "LinkedIn hook", "hook_tiktok": "TikTok hook", "structure": "Brief structure note"},
+  "competitor_intel": "2-3 sentences on likely moves from Evolve Your Success, New to Med Device, Medical Sales U, Jebb Ruff, Kat Hurd, or Rep Path this week — and one specific recommendation for Ryan",
+  "funnel_insight": "2-3 sentences on one actionable funnel or offer strategy from Hormozi, Brunson, or Porterfield applied specifically to hireleveluniversity.com or movetomedsales.com right now"
+}
+Make content ideas alternate between Track 1 and Track 2. Make every hook platform-specific and immediately compelling.`;
+
+  try {
+    const raw = await callClaude(prompt);
+    const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if (d.error) throw new Error(d.error);
+    out.innerHTML = `
+      <div class="scripture-card">
+        <div class="scripture-ref">${d.scripture.reference}</div>
+        <div class="scripture-text">"${d.scripture.text}"</div>
+        <div class="scripture-interp">${d.scripture.interpretation}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Content idea 1 — video (${d.content_video.avatar})</div>
+        <div class="card-body">${d.content_video.concept}\n\nLinkedIn hook: ${d.content_video.hook_linkedin}\n\nTikTok hook: ${d.content_video.hook_tiktok}\n\nStructure: ${d.content_video.structure}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Content idea 2 — written post (${d.content_written.avatar})</div>
+        <div class="card-body">${d.content_written.concept}\n\nLinkedIn hook: ${d.content_written.hook_linkedin}\n\nTikTok hook: ${d.content_written.hook_tiktok}\n\nStructure: ${d.content_written.structure}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Competitor intel</div>
+        <div class="card-body">${d.competitor_intel}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Funnel insight</div>
+        <div class="card-body">${d.funnel_insight}</div>
+      </div>`;
+  } catch(e) {
+    out.innerHTML = `<div class="error-card">Error generating report: ${e.message}. Check your API key is correct and try again.</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Regenerate report';
+}
+
+async function delegateTask() {
+  if (!state.apiKey) { alert('Please add your API key first.'); return; }
+  const input = document.getElementById('task-input');
+  const btn = document.getElementById('task-btn');
+  const list = document.getElementById('tasks-list');
+  const taskText = input.value.trim();
+  if (!taskText) return;
+  btn.disabled = true;
+  btn.textContent = 'Breaking it down...';
+  list.innerHTML = `<div class="card">${loader()}</div>`;
+
+  const prompt = `Ryan has this task: "${taskText}"
+
+Break it into 3-6 concrete action steps. For each step assign an owner using Dan Martell Buy Back Your Time logic:
+- Ryan = only if it requires his voice, his relationships, his coaching, or his vision (zone of genius only)
+- Brandon = business operations, tech, systems, builds, funnels
+- VA = research, scheduling, admin, formatting, repetitive tasks
+
+Return ONLY raw JSON, no markdown:
+{"steps":[{"task":"...","owner":"Ryan","note":"one short sentence why this owner"}]}`;
+
+  try {
+    const raw = await callClaude(prompt);
+    const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if (d.error) throw new Error(d.error);
+    state.tasks = d.steps.map((s,i) => ({...s, id: Date.now()+i, done: false}));
+    renderTasks(list);
+  } catch(e) {
+    list.innerHTML = `<div class="error-card">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Break this down';
+  input.value = '';
+}
+
+function renderTasks(list) {
+  if (!state.tasks.length) { list.innerHTML = ''; return; }
+  list.innerHTML = `<div class="card">
+    <div class="card-label">Your task breakdown</div>
+    ${state.tasks.map(t => `
+      <div class="task-item">
+        <div class="task-check ${t.done?'done':''}" onclick="toggleTask(${t.id})"></div>
+        <div style="flex:1">
+          <div class="task-text ${t.done?'done':''}">${t.task}</div>
+          <div class="task-owner"><span class="badge badge-${t.owner}">${t.owner}</span> — ${t.note}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function toggleTask(id) {
+  state.tasks = state.tasks.map(t => t.id===id ? {...t,done:!t.done} : t);
+  renderTasks(document.getElementById('tasks-list'));
+}
+
+async function generateContent() {
+  if (!state.apiKey) { alert('Please add your API key first.'); return; }
+  const btn = document.getElementById('content-btn');
+  const out = document.getElementById('content-output');
+  const topic = document.getElementById('content-topic').value.trim();
+  btn.disabled = true;
+  btn.textContent = 'Writing in your voice...';
+  out.innerHTML = `<div class="card">${loader()}</div>`;
+
+  const platform = state.platform;
+  const avatar = state.avatar === 'track1'
+    ? 'Track 1 — the ambitious career changer who wants to break into medical sales for the first time'
+    : 'Track 2 — the Stuck Achiever, 5-12 years in medical sales, Presidents Club performer, quietly losing confidence after getting passed over';
+  const topicLine = topic ? `Angle or topic: "${topic}"` : 'Choose a compelling angle that would resonate deeply with this avatar right now.';
+
+  const prompt = `Write a ${platform === 'linkedin' ? 'LinkedIn post' : 'TikTok script'} for Ryan's HireLevel University brand.
+
+Avatar: ${avatar}
+${topicLine}
+
+${platform === 'linkedin'
+  ? 'LinkedIn: Strong scroll-stopping opening line. Narrative or story structure. Vulnerability where it fits. Peer-level tone. Soft CTA. 150-250 words.'
+  : 'TikTok: Hook in first 3 seconds. Structure: hook, conflict, resolution, CTA. Punchy. Direct to camera energy. Label each section. 100-150 words.'}
+
+Voice: Conversational. Short punchy sentences. No em dashes. No AI patterns. Makes the reader feel seen. Like a real conversation at a coffee shop.
+
+Return ONLY raw JSON, no markdown:
+{"hook":"the opening hook line","post":"the full post or script","cta":"the soft CTA used"}`;
+
+  try {
+    const raw = await callClaude(prompt);
+    const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if (d.error) throw new Error(d.error);
+    const escaped = encodeURIComponent(d.post);
+    out.innerHTML = `
+      <div class="card">
+        <div class="card-label">${platform === 'linkedin' ? 'LinkedIn post' : 'TikTok script'} — ${state.avatar === 'track1' ? 'Track 1' : 'Track 2'}</div>
+        <div class="card-body">${d.post}</div>
+        <button class="copy-btn" onclick="copyText('${escaped}')">Copy to clipboard</button>
+      </div>
+      <div class="card">
+        <div class="card-label">Hook</div>
+        <div class="card-body">${d.hook}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">CTA used</div>
+        <div class="card-body">${d.cta}</div>
+      </div>`;
+  } catch(e) {
+    out.innerHTML = `<div class="error-card">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Generate post';
+}
+
+function copyText(encoded) {
+  navigator.clipboard.writeText(decodeURIComponent(encoded))
+    .then(() => alert('Copied to clipboard.'))
+    .catch(() => alert('Copy failed — please select the text manually.'));
+}
+
+init();
+</script>
+</body>
+</html>
