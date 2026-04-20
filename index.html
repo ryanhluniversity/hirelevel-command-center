@@ -30,6 +30,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toggle-opt.sel{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
 textarea{width:100%;padding:12px 14px;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#fff;border:1px solid #e8e8e4;border-radius:12px;resize:none;margin-bottom:12px;line-height:1.5}
 textarea:focus{outline:none;border-color:#1D9E75}
+input[type=password],input[type=text]{width:100%;padding:12px 14px;font-size:14px;color:#1a1a1a;background:#fff;border:1px solid #e8e8e4;border-radius:12px;margin-bottom:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+input:focus{outline:none;border-color:#1D9E75}
 .task-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0eb}
 .task-item:last-child{border-bottom:none}
 .task-check{width:20px;height:20px;min-width:20px;border-radius:50%;border:1.5px solid #ddd;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;background:#fff;transition:all 0.15s}
@@ -42,7 +44,7 @@ textarea:focus{outline:none;border-color:#1D9E75}
 .badge-Ryan{background:#E6F1FB;color:#0C447C}
 .badge-Brandon{background:#EEEDFE;color:#3C3489}
 .badge-VA{background:#FAEEDA;color:#633806}
-.copy-btn{font-size:12px;color:#1D9E75;background:none;border:none;cursor:pointer;padding:8px 0 0;font-weight:600}
+.copy-btn{font-size:12px;color:#1D9E75;background:none;border:none;cursor:pointer;padding:8px 0 0;font-weight:600;display:block}
 .scripture-card{background:#E1F5EE;border:1px solid #5DCAA5;border-radius:12px;padding:20px;margin-bottom:12px}
 .scripture-ref{font-size:11px;font-weight:600;color:#085041;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em}
 .scripture-text{font-size:15px;color:#085041;line-height:1.7;font-style:italic;margin-bottom:10px}
@@ -53,7 +55,12 @@ textarea:focus{outline:none;border-color:#1D9E75}
 .loader span:nth-child(3){animation-delay:0.4s}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
 .error-card{background:#fff0f0;border:1px solid #ffcdd2;border-radius:12px;padding:16px;margin-bottom:12px;font-size:14px;color:#c62828;line-height:1.6}
-.status-bar{font-size:12px;color:#1D9E75;margin-bottom:16px;font-weight:600}
+.setup-card{background:#fff;border:2px solid #1D9E75;border-radius:12px;padding:20px;margin-bottom:20px}
+.setup-card h3{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:8px}
+.setup-card p{font-size:13px;color:#666;line-height:1.6;margin-bottom:14px}
+.save-key-btn{width:100%;padding:13px;font-size:14px;font-weight:600;background:#1D9E75;color:#fff;border:none;border-radius:10px;cursor:pointer}
+.connected-bar{background:#E1F5EE;border:1px solid #5DCAA5;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;color:#085041;display:flex;align-items:center;justify-content:space-between}
+.disconnect-btn{font-size:11px;color:#888;background:none;border:none;cursor:pointer;font-weight:500}
 </style>
 </head>
 <body>
@@ -73,7 +80,7 @@ textarea:focus{outline:none;border-color:#1D9E75}
 <div class="content active" id="tab-morning">
   <div class="section-title">Good morning, Ryan.</div>
   <div class="section-sub">Your daily brief — scripture, content ideas, competitor intel, and funnel insights.</div>
-  <div class="status-bar">AI connected and ready</div>
+  <div id="key-status-morning"></div>
   <button class="primary-btn" id="report-btn" onclick="generateReport()">Generate today's report</button>
   <div id="morning-output"></div>
 </div>
@@ -81,7 +88,7 @@ textarea:focus{outline:none;border-color:#1D9E75}
 <div class="content" id="tab-tasks">
   <div class="section-title">Task hub</div>
   <div class="section-sub">Describe a task. Claude breaks it down and assigns owners using Buy Back Your Time logic.</div>
-  <div class="status-bar">AI connected and ready</div>
+  <div id="key-status-tasks"></div>
   <textarea id="task-input" rows="3" placeholder="e.g. 'Build the Track 2 landing page' or 'Create a follow-up email sequence for webinar no-shows'"></textarea>
   <button class="primary-btn" id="task-btn" onclick="delegateTask()">Break this down</button>
   <div id="tasks-list"></div>
@@ -90,7 +97,7 @@ textarea:focus{outline:none;border-color:#1D9E75}
 <div class="content" id="tab-content">
   <div class="section-title">Content studio</div>
   <div class="section-sub">Pick your platform and avatar. Get a post in your exact voice — ready to copy and paste.</div>
-  <div class="status-bar">AI connected and ready</div>
+  <div id="key-status-content"></div>
   <div class="card-label">Platform</div>
   <div class="toggle-row">
     <div class="toggle-opt sel" id="plt-linkedin" onclick="selectToggle('platform','linkedin',this)">LinkedIn</div>
@@ -134,17 +141,56 @@ NON-NEGOTIABLES: Faith and family are equal highest priorities and both rank abo
 
 const state = { platform: 'linkedin', avatar: 'track1', tasks: [] };
 
+function getKey() { return localStorage.getItem('hl_api_key') || ''; }
+
+function renderKeyStatus() {
+  const key = getKey();
+  const ids = ['morning','tasks','content'];
+  ids.forEach(id => {
+    const el = document.getElementById('key-status-'+id);
+    if (!el) return;
+    if (key) {
+      el.innerHTML = `<div class="connected-bar">AI connected and ready <button class="disconnect-btn" onclick="clearKey()">Change key</button></div>`;
+    } else {
+      el.innerHTML = `
+        <div class="setup-card">
+          <h3>One-time setup</h3>
+          <p>Paste your Anthropic API key below to activate the AI. It starts with <strong>sk-ant-</strong> and is stored only on this device.</p>
+          <input type="password" id="key-input-${id}" placeholder="sk-ant-api03-..." />
+          <button class="save-key-btn" onclick="saveKey('${id}')">Save and activate</button>
+        </div>`;
+    }
+  });
+}
+
+function saveKey(inputId) {
+  const val = document.getElementById('key-input-'+inputId).value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    alert('That does not look right. Your key should start with sk-ant-');
+    return;
+  }
+  localStorage.setItem('hl_api_key', val);
+  renderKeyStatus();
+}
+
+function clearKey() {
+  localStorage.removeItem('hl_api_key');
+  renderKeyStatus();
+}
+
 function init() {
   const d = new Date();
   document.getElementById('date-badge').textContent = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  renderKeyStatus();
 }
 
 function showTab(tab) {
   document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
-  const idx = ['morning','tasks','content'].indexOf(tab);
-  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  ['morning','tasks','content'].forEach((t,i) => {
+    if(t===tab) document.querySelectorAll('.nav-btn')[i].classList.add('active');
+  });
 }
 
 function selectToggle(group, val, el) {
@@ -159,34 +205,40 @@ function loader() {
 }
 
 async function callClaude(prompt) {
-  const res = await fetch('/api/chat', {
+  const key = getKey();
+  if (!key) { alert('Please add your API key first.'); throw new Error('No API key'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ prompt, system: RYAN_CONTEXT })
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system: RYAN_CONTEXT,
+      messages: [{ role: 'user', content: prompt }]
+    })
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.text;
+  if (data.error) throw new Error(data.error.message);
+  return data.content?.[0]?.text || '';
 }
 
 async function generateReport() {
+  const key = getKey();
+  if (!key) { alert('Please add your API key first.'); return; }
   const btn = document.getElementById('report-btn');
   const out = document.getElementById('morning-output');
   btn.disabled = true;
   btn.textContent = 'Generating your brief...';
   out.innerHTML = `<div class="card"><div class="card-label">Loading</div>${loader()}</div>`;
-
   const today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const prompt = `Generate Ryan's full morning report for ${today}. Return ONLY raw JSON with no markdown, no backticks, no explanation:
-{
-  "scripture": {"reference": "Book Chapter:Verse", "text": "The scripture verse text", "interpretation": "2-3 sentences interpreting through Myron Golden prosperity theology tied to what Ryan is building right now"},
-  "content_video": {"avatar": "Track 1 or Track 2", "concept": "Video concept in 1-2 sentences", "hook_linkedin": "LinkedIn hook", "hook_tiktok": "TikTok hook", "structure": "Brief structure note"},
-  "content_written": {"avatar": "Track 1 or Track 2", "concept": "Written post concept in 1-2 sentences", "hook_linkedin": "LinkedIn hook", "hook_tiktok": "TikTok hook", "structure": "Brief structure note"},
-  "competitor_intel": "2-3 sentences on likely moves from competitors this week and one specific recommendation for Ryan",
-  "funnel_insight": "2-3 sentences on one actionable funnel or offer strategy applied specifically to hireleveluniversity.com or movetomedsales.com"
-}
-Alternate content ideas between Track 1 and Track 2. Make every hook platform-specific and compelling.`;
-
+  const prompt = `Generate Ryan's full morning report for ${today}. Return ONLY raw JSON, no markdown, no backticks:
+{"scripture":{"reference":"Book Chapter:Verse","text":"verse text","interpretation":"2-3 sentences through Myron Golden prosperity theology tied to what Ryan is building"},"content_video":{"avatar":"Track 1 or Track 2","concept":"concept in 1-2 sentences","hook_linkedin":"hook","hook_tiktok":"hook","structure":"brief note"},"content_written":{"avatar":"Track 1 or Track 2","concept":"concept in 1-2 sentences","hook_linkedin":"hook","hook_tiktok":"hook","structure":"brief note"},"competitor_intel":"2-3 sentences on competitor moves and one recommendation for Ryan","funnel_insight":"2-3 sentences on one actionable strategy from mentors applied to hireleveluniversity.com or movetomedsales.com"}
+Alternate content between Track 1 and Track 2. Make every hook compelling and platform-specific.`;
   try {
     const raw = await callClaude(prompt);
     const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -213,13 +265,15 @@ Alternate content ideas between Track 1 and Track 2. Make every hook platform-sp
         <div class="card-body">${d.funnel_insight}</div>
       </div>`;
   } catch(e) {
-    out.innerHTML = `<div class="error-card">Error: ${e.message}</div>`;
+    out.innerHTML = `<div class="error-card">Error: ${e.message}. Check your API key and try again.</div>`;
   }
   btn.disabled = false;
   btn.textContent = 'Regenerate report';
 }
 
 async function delegateTask() {
+  const key = getKey();
+  if (!key) { alert('Please add your API key first.'); return; }
   const input = document.getElementById('task-input');
   const btn = document.getElementById('task-btn');
   const list = document.getElementById('tasks-list');
@@ -228,14 +282,12 @@ async function delegateTask() {
   btn.disabled = true;
   btn.textContent = 'Breaking it down...';
   list.innerHTML = `<div class="card">${loader()}</div>`;
-
   const prompt = `Ryan has this task: "${taskText}"
 Break into 3-6 concrete steps. Assign owner using Dan Martell Buy Back Your Time:
 - Ryan = requires his voice, relationships, coaching, or vision only
 - Brandon = operations, tech, systems, funnels
 - VA = research, scheduling, admin, repetitive tasks
 Return ONLY raw JSON: {"steps":[{"task":"...","owner":"Ryan","note":"why this owner"}]}`;
-
   try {
     const raw = await callClaude(prompt);
     const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -265,38 +317,37 @@ function renderTasks(list) {
 }
 
 function toggleTask(id) {
-  state.tasks = state.tasks.map(t => t.id===id ? {...t,done:!t.done} : t);
+  state.tasks = state.tasks.map(t => t.id===id?{...t,done:!t.done}:t);
   renderTasks(document.getElementById('tasks-list'));
 }
 
 async function generateContent() {
+  const key = getKey();
+  if (!key) { alert('Please add your API key first.'); return; }
   const btn = document.getElementById('content-btn');
   const out = document.getElementById('content-output');
   const topic = document.getElementById('content-topic').value.trim();
   btn.disabled = true;
   btn.textContent = 'Writing in your voice...';
   out.innerHTML = `<div class="card">${loader()}</div>`;
-
   const platform = state.platform;
   const avatar = state.avatar === 'track1'
-    ? 'Track 1 — ambitious career changer wanting to break into medical sales'
-    : 'Track 2 — Stuck Achiever, 5-12 years in medical sales, Presidents Club, quietly losing confidence';
+    ? 'Track 1 — ambitious career changer wanting to break into medical sales for the first time'
+    : 'Track 2 — Stuck Achiever, 5-12 years in medical sales, Presidents Club, quietly losing confidence after getting passed over';
   const topicLine = topic ? `Angle: "${topic}"` : 'Choose a compelling angle that resonates deeply with this avatar right now.';
-
   const prompt = `Write a ${platform === 'linkedin' ? 'LinkedIn post' : 'TikTok script'} for Ryan's HireLevel University.
 Avatar: ${avatar}
 ${topicLine}
-${platform === 'linkedin' ? 'LinkedIn: Strong scroll-stopping opener. Story structure. Peer-level tone. Soft CTA. 150-250 words.' : 'TikTok: Hook in first 3 seconds. Hook, conflict, resolution, CTA structure. Label each section. 100-150 words.'}
-Voice: Conversational. Short punchy sentences. No em dashes. No AI patterns. Makes reader feel seen.
-Return ONLY raw JSON: {"hook":"opening hook","post":"full post or script","cta":"the soft CTA used"}`;
-
+${platform === 'linkedin' ? 'LinkedIn: Strong scroll-stopping opener. Story structure. Peer-level tone. Soft CTA. 150-250 words.' : 'TikTok: Hook in first 3 seconds. Hook, conflict, resolution, CTA. Label each section. 100-150 words.'}
+Voice: Conversational. Short punchy sentences. No em dashes. No AI patterns. Makes reader feel seen. Coffee shop conversation.
+Return ONLY raw JSON: {"hook":"opening hook line","post":"full post or script","cta":"the soft CTA used"}`;
   try {
     const raw = await callClaude(prompt);
     const d = JSON.parse(raw.replace(/```json|```/g,'').trim());
     const escaped = encodeURIComponent(d.post);
     out.innerHTML = `
       <div class="card">
-        <div class="card-label">${platform === 'linkedin' ? 'LinkedIn post' : 'TikTok script'} — ${state.avatar === 'track1' ? 'Track 1' : 'Track 2'}</div>
+        <div class="card-label">${platform==='linkedin'?'LinkedIn post':'TikTok script'} — ${state.avatar==='track1'?'Track 1':'Track 2'}</div>
         <div class="card-body">${d.post}</div>
         <button class="copy-btn" onclick="copyText('${escaped}')">Copy to clipboard</button>
       </div>
@@ -318,7 +369,7 @@ Return ONLY raw JSON: {"hook":"opening hook","post":"full post or script","cta":
 function copyText(encoded) {
   navigator.clipboard.writeText(decodeURIComponent(encoded))
     .then(() => alert('Copied.'))
-    .catch(() => alert('Copy failed — select text manually.'));
+    .catch(() => alert('Select the text manually and copy it.'));
 }
 
 init();
